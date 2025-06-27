@@ -33,7 +33,7 @@ export interface Job {
     search: string;
     location: string;
     jobType: string;
-    salaryRange: number;
+    salaryRange: [number, number];
   }
   
   export const JOB_TYPES = [

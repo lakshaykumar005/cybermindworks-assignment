@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Container,
   Grid,
@@ -149,9 +149,10 @@ export default function HomePage() {
     search: '',
     location: '',
     jobType: '',
-    salaryRange: 5,
+    salaryRange: [5, 30],
   });
   const [modalOpened, setModalOpened] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
 
   // React Hook Form setup for the modal
   const {
@@ -161,6 +162,8 @@ export default function HomePage() {
     formState: { errors },
     control,
     getValues,
+    watch,
+    setValue,
   } = useForm({
     defaultValues: {
       jobTitle: '',
@@ -176,29 +179,120 @@ export default function HomePage() {
     },
   });
 
-  const onSubmit = (data: any) => {
-    // Create a new job object from form data
-    const newJob: Job = {
-      id: (Math.random() * 1000000).toFixed(0),
-      jobTitle: data.jobTitle,
-      companyName: data.companyName,
-      location: data.location,
-      jobType: data.jobType,
-      salaryRange: {
-        min: Number(data.salaryMin),
-        max: Number(data.salaryMax),
-      },
-      jobDescription: data.jobDescription,
-      requirements: data.requirements,
-      responsibilities: data.responsibilities,
-      applicationDeadline: data.applicationDeadline,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    // Replace the first job in the jobs array with the new job
-    setJobs(prev => [newJob, ...prev.slice(1)]);
-    setModalOpened(false);
-    reset();
+  // Load draft from sessionStorage when modal opens
+  useEffect(() => {
+    if (modalOpened) {
+      const savedDraft = sessionStorage.getItem('jobDraft');
+      if (savedDraft) {
+        try {
+          const draftData = JSON.parse(savedDraft);
+          Object.keys(draftData).forEach(key => {
+            setValue(key as any, draftData[key]);
+          });
+        } catch (error) {
+          console.error('Error loading draft:', error);
+        }
+      }
+    }
+  }, [modalOpened, setValue]);
+
+  // Save draft to sessionStorage
+  const saveDraft = () => {
+    const draft = getValues();
+    sessionStorage.setItem('jobDraft', JSON.stringify(draft));
+    console.log('Draft saved:', draft);
+  };
+
+  // Clear draft from sessionStorage
+  const clearDraft = () => {
+    sessionStorage.removeItem('jobDraft');
+  };
+
+  // Watch all form fields for validation
+  const watchedFields = watch();
+  
+  // Check if all fields are filled
+  useEffect(() => {
+    const allFieldsFilled = 
+      watchedFields.jobTitle?.trim() !== '' &&
+      watchedFields.companyName?.trim() !== '' &&
+      watchedFields.location?.trim() !== '' &&
+      watchedFields.jobType?.trim() !== '' &&
+      watchedFields.salaryMin?.toString().trim() !== '' &&
+      watchedFields.salaryMax?.toString().trim() !== '' &&
+      watchedFields.applicationDeadline?.trim() !== '' &&
+      watchedFields.jobDescription?.trim() !== '' &&
+      watchedFields.requirements?.trim() !== '' &&
+      watchedFields.responsibilities?.trim() !== '';
+    
+    setIsFormValid(allFieldsFilled);
+  }, [watchedFields]);
+
+  useEffect(() => {
+    async function fetchJobs() {
+      try {
+        const res = await fetch('/api/jobs');
+        if (!res.ok) throw new Error('Failed to fetch jobs');
+        const data = await res.json();
+        
+        // Only replace jobs if there are jobs in the database
+        if (data.length > 0) {
+          // Transform salaryMin/salaryMax to salaryRange
+          const jobsFromApi = data.map((job: any) => ({
+            ...job,
+            salaryRange: { min: job.salaryMin, max: job.salaryMax },
+          }));
+          
+          // Replace existing jobs starting from the first position
+          // Keep the same total number of cards by combining database jobs with remaining mock jobs
+          const remainingMockJobs = mockJobs.slice(data.length);
+          setJobs([...jobsFromApi, ...remainingMockJobs]);
+        }
+        // If no jobs in database, keep the mock jobs as they are
+      } catch (err) {
+        console.error('Error fetching jobs:', err);
+        // Keep mock jobs on error
+      }
+    }
+    fetchJobs();
+  }, []);
+
+  const onSubmit = async (data: any) => {
+    try {
+      // Save job to the database via API
+      const response = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      
+      if (response.ok) {
+        // Clear the draft since job was published successfully
+        clearDraft();
+        
+        // Refetch jobs from database to show the new job immediately
+        const res = await fetch('/api/jobs');
+        if (res.ok) {
+          const fetchedJobs = await res.json();
+          if (fetchedJobs.length > 0) {
+            // Transform salaryMin/salaryMax to salaryRange
+            const jobsFromApi = fetchedJobs.map((job: any) => ({
+              ...job,
+              salaryRange: { min: job.salaryMin, max: job.salaryMax },
+            }));
+            
+            // Replace existing jobs starting from the first position
+            const remainingMockJobs = mockJobs.slice(fetchedJobs.length);
+            setJobs([...jobsFromApi, ...remainingMockJobs]);
+          }
+        }
+      }
+      
+      setModalOpened(false);
+      reset();
+    } catch (error) {
+      console.error('Error publishing job:', error);
+    }
   };
 
   const handleFilterChange = (key: keyof JobFilters, value: any) => {
@@ -229,6 +323,17 @@ export default function HomePage() {
 
   // Filtering logic for jobs
   const filteredJobs = jobs.filter((job) => {
+    // Check if job is expired (except for mock jobs)
+    const isMockJob = mockJobs.some(mockJob => mockJob.id === job.id);
+    if (!isMockJob) {
+      const deadline = new Date(job.applicationDeadline);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+      if (deadline < today) {
+        return false; // Hide expired jobs
+      }
+    }
+
     // Enhanced Search filter (job title, company name, or job description)
     const searchText = filters.search.trim().toLowerCase();
     const searchMatch =
@@ -247,7 +352,7 @@ export default function HomePage() {
 
     // Salary range filter (show jobs where the salary range overlaps with the selected range)
     const salaryMatch =
-      (!filters.salaryRange || job.salaryRange.max >= filters.salaryRange);
+      (!filters.salaryRange || (job.salaryRange.max >= filters.salaryRange[0] && job.salaryRange.min <= filters.salaryRange[1]));
 
     return searchMatch && locationMatch && jobTypeMatch && salaryMatch;
   });
@@ -371,12 +476,13 @@ export default function HomePage() {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', flex: 1, width: '100%' }}>
               <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
                 <span style={{ fontWeight: 500, color: '#222', fontSize: 16, textAlign: 'left' }}>Salary Per Month</span>
-                <span style={{ color: '#222', fontWeight: 500, fontSize: 16, textAlign: 'right', marginRight: '76px' }}>{`₹${filters.salaryRange}LPA`}</span>
+                <span style={{ color: '#222', fontWeight: 500, fontSize: 16, textAlign: 'right', marginRight: '76px' }}>{`₹${filters.salaryRange[0]}LPA - ₹${filters.salaryRange[1]}LPA`}</span>
               </div>
-              <Slider
+              <RangeSlider
                 min={5}
                 max={30}
-                step={1}
+                step={0.5}
+                minRange={0.5}
                 value={filters.salaryRange}
                 onChange={(value) => handleFilterChange('salaryRange', value)}
                 style={{ width: '100%', maxWidth: 320, marginTop: 8 }}
@@ -553,7 +659,19 @@ export default function HomePage() {
                 style={{ flex: 1 }}
                 size="md"
                 radius="md"
-                {...register('applicationDeadline')}
+                min={new Date().toISOString().split('T')[0]}
+                {...register('applicationDeadline', {
+                  validate: (value) => {
+                    if (!value) return 'Application deadline is required';
+                    const selectedDate = new Date(value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    if (selectedDate < today) {
+                      return 'Application deadline cannot be in the past';
+                    }
+                    return true;
+                  }
+                })}
               />
             </div>
             <div style={{ marginBottom: 24 }}>
@@ -596,9 +714,7 @@ export default function HomePage() {
                 style={{ fontWeight: 600, fontSize: 18, borderRadius: 8, padding: '0 32px', height: 48 }}
                 type="button"
                 onClick={() => {
-                  const draft = getValues();
-                  // Simulate saving draft (e.g., to localStorage or API)
-                  console.log('Draft saved:', draft);
+                  saveDraft();
                   reset();
                   setModalOpened(false);
                 }}
@@ -609,6 +725,7 @@ export default function HomePage() {
                 size="md"
                 style={{ background: '#1da1f2', color: '#fff', fontWeight: 600, fontSize: 18, borderRadius: 8, padding: '0 32px', height: 48 }}
                 type="submit"
+                disabled={!isFormValid}
               >
                 Publish &nbsp; &raquo;
               </Button>
