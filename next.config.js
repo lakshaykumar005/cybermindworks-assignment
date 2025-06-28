@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    optimizePackageImports: ['@mantine/core', '@mantine/hooks'],
-  },
-};
+    serverComponentsExternalPackages: ['@prisma/client', 'prisma']
+  }
+}
 
-module.exports = nextConfig; 
+module.exports = nextConfig

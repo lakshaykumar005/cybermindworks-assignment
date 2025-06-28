@@ -21,4 +21,5 @@ model Job {
   applicationDeadline String
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+
 }
