@@ -149,7 +149,7 @@ export default function HomePage() {
     search: '',
     location: '',
     jobType: '',
-    salaryRange: [5, 30],
+    salaryRange: [50, 200],
   });
   const [modalOpened, setModalOpened] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
@@ -350,9 +350,15 @@ export default function HomePage() {
     const jobTypeMatch =
       !filters.jobType || job.jobType === filters.jobType;
 
-    // Salary range filter (show jobs where the salary range overlaps with the selected range)
+    // Salary range filter (convert K's to LPA for comparison)
+    // 1 LPA = 12 months, so 1K per month = 1 LPA / 12 = 0.083 LPA
+    const minSalaryInLPA = filters.salaryRange[0] * 0.083; // Convert K's to LPA
+    const maxSalaryInLPA = filters.salaryRange[1] * 0.083; // Convert K's to LPA
+    
     const salaryMatch =
-      (!filters.salaryRange || (job.salaryRange.max >= filters.salaryRange[0] && job.salaryRange.min <= filters.salaryRange[1]));
+      (!filters.salaryRange || 
+       (job.salaryRange.max >= minSalaryInLPA && job.salaryRange.min <= maxSalaryInLPA) ||
+       job.salaryRange.max >= maxSalaryInLPA); // Show jobs exceeding max range
 
     return searchMatch && locationMatch && jobTypeMatch && salaryMatch;
   });
@@ -436,39 +442,27 @@ export default function HomePage() {
           <div style={{ width: 1, height: 40, background: '#eaeaea', margin: '0 24px' }} />
           <div style={{ display: 'flex', alignItems: 'center', flex: 1, gap: 12 }}>
             <IconMapPin size={22} color="#888" style={{ marginRight: 8 }} />
-            <Controller
-              name="location"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  placeholder="Preferred Location"
-                  variant="unstyled"
-                  style={{ flex: 1, fontSize: 18, color: '#222' }}
-                  data={LOCATIONS.map(loc => ({ value: loc, label: loc }))}
-                  value={field.value}
-                  onChange={field.onChange}
-                  clearable
-                />
-              )}
+            <Select
+              placeholder="Preferred Location"
+              variant="unstyled"
+              style={{ flex: 1, fontSize: 18, color: '#222' }}
+              data={LOCATIONS.map(loc => ({ value: loc, label: loc }))}
+              value={filters.location}
+              onChange={(value) => handleFilterChange('location', value)}
+              clearable
             />
           </div>
           <div style={{ width: 1, height: 40, background: '#eaeaea', margin: '0 24px' }} />
           <div style={{ display: 'flex', alignItems: 'center', flex: 1, gap: 12 }}>
             <IconUsers size={22} color="#888" style={{ marginRight: 8 }} />
-            <Controller
-              name="jobType"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  placeholder="Job type"
-                  variant="unstyled"
-                  style={{ flex: 1, fontSize: 18, color: '#222' }}
-                  data={JOB_TYPES.map(type => ({ value: type, label: type }))}
-                  value={field.value}
-                  onChange={field.onChange}
-                  clearable
-                />
-              )}
+            <Select
+              placeholder="Job type"
+              variant="unstyled"
+              style={{ flex: 1, fontSize: 18, color: '#222' }}
+              data={JOB_TYPES.map(type => ({ value: type, label: type }))}
+              value={filters.jobType}
+              onChange={(value) => handleFilterChange('jobType', value)}
+              clearable
             />
           </div>
           <div style={{ width: 1, height: 40, background: '#eaeaea', margin: '0 24px' }} />
@@ -476,13 +470,13 @@ export default function HomePage() {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', flex: 1, width: '100%' }}>
               <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
                 <span style={{ fontWeight: 500, color: '#222', fontSize: 16, textAlign: 'left' }}>Salary Per Month</span>
-                <span style={{ color: '#222', fontWeight: 500, fontSize: 16, textAlign: 'right', marginRight: '76px' }}>{`₹${filters.salaryRange[0]}LPA - ₹${filters.salaryRange[1]}LPA`}</span>
+                <span style={{ color: '#222', fontWeight: 500, fontSize: 16, textAlign: 'right', marginRight: '76px' }}>{`₹${filters.salaryRange[0]}K - ₹${filters.salaryRange[1]}K`}</span>
               </div>
               <RangeSlider
-                min={5}
-                max={30}
-                step={0.5}
-                minRange={0.5}
+                min={50}
+                max={200}
+                step={5}
+                minRange={10}
                 value={filters.salaryRange}
                 onChange={(value) => handleFilterChange('salaryRange', value)}
                 style={{ width: '100%', maxWidth: 320, marginTop: 8 }}
@@ -545,7 +539,7 @@ export default function HomePage() {
                       <IconMapPin size={14} />
                       <Text size="sm">Onsite</Text>
                     </Group>
-                    <Text size="sm">₹{job.salaryRange.min}LPA</Text>
+                    <Text size="sm">₹{job.salaryRange.max}LPA</Text>
                   </Group>
                   <Box mt="xs">
                     <Text size="sm" c="gray.7" lineClamp={3}>
@@ -632,7 +626,7 @@ export default function HomePage() {
             </div>
             <div style={{ display: 'flex', gap: 24, marginBottom: 24 }}>
               <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <Text size="sm" style={{ fontWeight: 500, marginBottom: 4 }}>Salary Range</Text>
+                <Text size="sm" style={{ fontWeight: 500, marginBottom: 4 }}>Salary Range(In LPA)</Text>
                 <div style={{ display: 'flex', gap: 12 }}>
                   <TextInput
                     placeholder="0"
@@ -643,7 +637,7 @@ export default function HomePage() {
                     {...register('salaryMin')}
                   />
                   <TextInput
-                    placeholder="12,00,000"
+                    placeholder="12"
                     size="md"
                     radius="md"
                     style={{ flex: 1, paddingLeft: 8 }}

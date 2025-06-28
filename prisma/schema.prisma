@@ -8,17 +8,17 @@ datasource db {
 }
 
 model Job {
-  id                String   @id @default(uuid())
-  jobTitle          String
-  companyName       String
-  location          String
-  jobType           String
-  salaryMin         Int
-  salaryMax         Int
-  jobDescription    String
-  requirements      String
-  responsibilities  String
+  id                  String   @id @default(uuid())
+  jobTitle            String
+  companyName         String
+  location            String
+  jobType             String
+  salaryMin           Int
+  salaryMax           Int
+  jobDescription      String
+  requirements        String
+  responsibilities    String
   applicationDeadline String
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
