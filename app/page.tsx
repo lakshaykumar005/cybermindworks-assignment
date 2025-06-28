@@ -149,7 +149,7 @@ export default function HomePage() {
     search: '',
     location: '',
     jobType: '',
-    salaryRange: [50, 200],
+    salaryRange: [10, 300],
   });
   const [modalOpened, setModalOpened] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
@@ -355,10 +355,20 @@ export default function HomePage() {
     const minSalaryInLPA = filters.salaryRange[0] * 0.083; // Convert K's to LPA
     const maxSalaryInLPA = filters.salaryRange[1] * 0.083; // Convert K's to LPA
     
+    // Debug log (only in development)
+    if (process.env.NODE_ENV === 'development' && filters.salaryRange[0] !== 10) {
+      console.log(`Filter: ${filters.salaryRange[0]}K-${filters.salaryRange[1]}K = ${minSalaryInLPA.toFixed(2)}-${maxSalaryInLPA.toFixed(2)} LPA`);
+      console.log(`Job: ${job.jobTitle} - ${job.salaryRange.max} LPA`);
+      const isInRange = job.salaryRange.max >= minSalaryInLPA && job.salaryRange.max <= maxSalaryInLPA;
+      console.log(`In Range: ${isInRange ? '✅' : '❌'}`);
+    } else if (process.env.NODE_ENV === 'development' && filters.salaryRange[0] === 10 && filters.salaryRange[1] === 300) {
+      console.log(`All Salaries Mode: ${job.jobTitle} - ${job.salaryRange.max} LPA ✅`);
+    }
+    
     const salaryMatch =
       (!filters.salaryRange || 
-       (job.salaryRange.max >= minSalaryInLPA && job.salaryRange.min <= maxSalaryInLPA) ||
-       job.salaryRange.max >= maxSalaryInLPA); // Show jobs exceeding max range
+       (filters.salaryRange[0] === 10 && filters.salaryRange[1] === 300) || // Show all when at full range
+       (job.salaryRange.max >= minSalaryInLPA && job.salaryRange.max <= maxSalaryInLPA)); // Show jobs within the selected range
 
     return searchMatch && locationMatch && jobTypeMatch && salaryMatch;
   });
@@ -470,13 +480,18 @@ export default function HomePage() {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', flex: 1, width: '100%' }}>
               <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
                 <span style={{ fontWeight: 500, color: '#222', fontSize: 16, textAlign: 'left' }}>Salary Per Month</span>
-                <span style={{ color: '#222', fontWeight: 500, fontSize: 16, textAlign: 'right', marginRight: '76px' }}>{`₹${filters.salaryRange[0]}K - ₹${filters.salaryRange[1]}K`}</span>
+                <span style={{ color: '#222', fontWeight: 500, fontSize: 16, textAlign: 'right', marginRight: '76px' }}>
+                  {filters.salaryRange[0] === 10 && filters.salaryRange[1] === 300 
+                    ? 'All Salaries' 
+                    : `₹${filters.salaryRange[0]}K - ₹${filters.salaryRange[1]}K`
+                  }
+                </span>
               </div>
               <RangeSlider
-                min={50}
-                max={200}
-                step={5}
-                minRange={10}
+                min={10}
+                max={300}
+                step={10}
+                minRange={20}
                 value={filters.salaryRange}
                 onChange={(value) => handleFilterChange('salaryRange', value)}
                 style={{ width: '100%', maxWidth: 320, marginTop: 8 }}
