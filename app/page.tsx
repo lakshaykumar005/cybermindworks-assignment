@@ -556,12 +556,30 @@ export default function HomePage() {
                     </Group>
                     <Text size="sm">₹{job.salaryRange.max}LPA</Text>
                   </Group>
-                  <Box mt="xs">
-                    {job.jobDescription.split('\n').map((line, idx) => (
-                      <Text size="xs" c="gray.7" key={idx} style={{ marginBottom: idx === 0 ? 2 : 0 }}>
-                        • {line}
-                      </Text>
-                    ))}
+                  <Box mt="xs" style={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 4,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden'
+                  }}>
+                    {job.jobDescription
+                      .split('\n')
+                      .slice(0, 2)
+                      .map((line, idx) => (
+                        <Text
+                          size="xs"
+                          c="gray.7"
+                          key={idx}
+                          style={{
+                            display: 'block',
+                            whiteSpace: 'normal',
+                            wordBreak: 'break-word',
+                            marginBottom: idx === 0 ? 2 : 0
+                          }}
+                        >
+                          • {line}
+                        </Text>
+                      ))}
                   </Box>
                 </Stack>
                 <Button
