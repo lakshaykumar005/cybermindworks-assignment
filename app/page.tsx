@@ -567,6 +567,7 @@ export default function HomePage() {
                   >
                     {job.jobDescription
                       .split('\n')
+                      .filter(line => line.trim() !== '')
                       .map((line, idx) => (
                         <Text
                           size="xs"
