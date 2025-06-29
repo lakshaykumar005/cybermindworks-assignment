@@ -550,7 +550,7 @@ export default function HomePage() {
                       <IconUsers size={14} />
                       <Text size="sm">1-3 yr Exp</Text>
                     </Group>
-                    <Group gap="xs">
+                    <Group gap={4}>
                       <IconMapPin size={14} />
                       <Text size="sm">Onsite</Text>
                     </Group>
