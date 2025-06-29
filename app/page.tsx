@@ -407,7 +407,7 @@ export default function HomePage() {
         boxShadow: '0 2px 16px rgba(0,0,0,0.04)'
       }} />
       {/* Header */}
-      <header style={{ background: '#fff', boxShadow: '0 4px 24px rgba(0,0,0,0.10), 0 1.5px 6px rgba(0,0,0,0.08)', borderRadius: 100, margin: '32px auto 24px', maxWidth: 900, padding: '0 16px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
+      <header style={{ background: '#fff', boxShadow: '0 4px 24px rgba(0,0,0,0.10), 0 1.5px 6px rgba(0,0,0,0.08)', borderRadius: 100, margin: '32px auto 24px', maxWidth: 900, padding: '0 16px', height: 70, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
         <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
           <img src="/cybermindworkslogo.png" alt="Logo" style={{ width: 36, height: 36, borderRadius: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', flexShrink: 0 }} />
           <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1, marginLeft: 32, marginRight: 32 }}>
