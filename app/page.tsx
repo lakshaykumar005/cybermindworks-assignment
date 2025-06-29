@@ -556,15 +556,17 @@ export default function HomePage() {
                     </Group>
                     <Text size="sm">₹{job.salaryRange.max}LPA</Text>
                   </Group>
-                  <Box mt="xs" style={{
-                    display: '-webkit-box',
-                    WebkitLineClamp: 4,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden'
-                  }}>
+                  <Box
+                    mt="xs"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 4,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}
+                  >
                     {job.jobDescription
                       .split('\n')
-                      .slice(0, 2)
                       .map((line, idx) => (
                         <Text
                           size="xs"
@@ -574,7 +576,7 @@ export default function HomePage() {
                             display: 'block',
                             whiteSpace: 'normal',
                             wordBreak: 'break-word',
-                            marginBottom: idx === 0 ? 2 : 0
+                            marginBottom: 2,
                           }}
                         >
                           • {line}
